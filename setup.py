@@ -55,8 +55,7 @@ ext_modules += [
 ]
 
 setup(
-    author="USDA ARS NWRC",
-    author_email='snow@ars.usda.gov',
+    author="iSnobal Community",
     python_requires='>=3.6',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
@@ -87,7 +86,7 @@ setup(
     tests_require=test_requirements,
     cmdclass=cmdclass,
     ext_modules=ext_modules,
-    url='https://github.com/USDA-ARS-NWRC/topocalc',
+    url='https://github.com/iSnobal/topocalc',
     use_scm_version={
         "local_scheme": "no-local-version"
     },
