@@ -6,12 +6,7 @@ Welcome to topocalc's documentation!
    :caption: Contents:
 
    readme
-   installation
-   usage
-   modules
    contributing
-   authors
-   history
 
 Indices and tables
 ==================
