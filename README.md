@@ -1,5 +1,10 @@
 # topocalc
 
+This is a copy from the original [ARS repository](https://github.com/USDA-ARS-NWRC/topocalc)
+to enable some basic maintenance and improvements.
+
+## Current functionality
+
 The `topocalc` package is a collection of functions to calculate various metrics on a digital elevation model (DEM). The calculations follow the equations laid out in [Dozier and Frew, 1990](https://doi.org/10.1109/36.58986) for the gradient, horizon and sky view factor. Currently the supported calculations are:
 
 1. Gradient for slope and aspect
@@ -85,6 +90,3 @@ dem_spacing = 30
 svf, tvf = viewf(dem, spacing=dem_spacing)
 ```
 
-## Command Line Interface
-
-Comming soon!
