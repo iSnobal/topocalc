@@ -1,8 +1,9 @@
 # topocalc
 
-[![Pypi version](https://img.shields.io/pypi/v/topocalc.svg)](https://pypi.python.org/pypi/topocalc)
-[![Coverage Status](https://coveralls.io/repos/github/USDA-ARS-NWRC/topocalc/badge.svg?branch=main)](https://coveralls.io/github/USDA-ARS-NWRC/topocalc?branch=main)
-[![Maintainability](https://api.codeclimate.com/v1/badges/20930fef2e7b7fe91dd3/maintainability)](https://codeclimate.com/github/USDA-ARS-NWRC/topocalc/maintainability)
+This is a copy from the original [ARS repository](https://github.com/USDA-ARS-NWRC/topocalc)
+to enable some basic maintenance and improvements.
+
+## Current functionality
 
 The `topocalc` package is a collection of functions to calculate various metrics on a digital elevation model (DEM). The calculations follow the equations laid out in [Dozier and Frew, 1990](https://doi.org/10.1109/36.58986) for the gradient, horizon and sky view factor. Currently the supported calculations are:
 
@@ -89,6 +90,3 @@ dem_spacing = 30
 svf, tvf = viewf(dem, spacing=dem_spacing)
 ```
 
-## Command Line Interface
-
-Comming soon!

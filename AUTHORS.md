@@ -1,9 +1,6 @@
 # Credits
 
-## Development Lead
+## Past Contributors
 
-* Scott Havens <scott.havens@ars.usda.gov>
+* [Scott Havens](https://github.com/scotthavens)
 
-## Contributors
-
-None yet. Why not be the first?
