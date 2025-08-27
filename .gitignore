@@ -1,5 +1,10 @@
 topocalc/version.py
 
+# Cython
+# Ignore generated files
+# https://cython.readthedocs.io/en/stable/src/userguide/source_files_and_compilation.html#distributing-cython-modules
+topocalc/core_c/topo_core.c
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
