@@ -1,0 +1,45 @@
+[build-system]
+requires = [
+  "Cython",
+  "numpy<1.23",
+  "setuptools",
+  "setuptools_scm",
+  "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "topocalc"
+description = "Topo calculations like gradient and sky view"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.9"
+authors = [{ name = "iSnobal Community" }]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+]
+dependencies = [
+  "numpy<1.23",
+  "click>=7.0",
+  "spatialnc>=0.2.12",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/iSnobal/topocalc"
+
+[project.scripts]
+topocalc = "topocalc.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["topocalc", "topocalc.*"]
+
+[tool.setuptools_scm]
+local_scheme = 'node-and-date'
+write_to = "topocalc/version.py"
