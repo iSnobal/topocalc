@@ -22,7 +22,6 @@ classifiers = [
 ]
 dependencies = [
   "numpy<1.23",
-  "click>=7.0",
   "spatialnc>=0.2.12",
 ]
 dynamic = ["version"]
