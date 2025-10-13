@@ -1,16 +1,11 @@
-# cython: embedsignature=True
-# distutils: language=3
 """
 C implementation of some radiation functions
 """
-
 
 import cython
 import numpy as np
 cimport numpy as np
 import ctypes
-# from cpython cimport bool
-# from libcpp cimport bool
 
 
 # Numpy must be initialized. When using numpy from C or Cython you must
@@ -38,7 +33,7 @@ def c_hor1d(np.ndarray[double, mode="c", ndim=1] z,
     Args:
         z: elevation array
         spacing: grid spacing
-    
+
     Returns
         hcos: cosine angle of horizon array changed in place
     """
@@ -58,7 +53,7 @@ def c_hor1d(np.ndarray[double, mode="c", ndim=1] z,
         hor1f(n, &z_arr[0], &h[0])
     else:
         hor1b(n, &z_arr[0], &h[0])
-    
+
     # call the horval C function
     horval(n, &z_arr[0], spacing, &h[0], &hcos[0])
 
@@ -75,7 +70,7 @@ def c_hor2d(np.ndarray[double, mode="c", ndim=2] z,
     Args:
         z: elevation array
         spacing: grid spacing
-    
+
     Returns
         hcos: cosine angle of horizon array changed in place
     """
@@ -85,7 +80,7 @@ def c_hor2d(np.ndarray[double, mode="c", ndim=2] z,
     cdef double cspacing = spacing
 
     cdef bint fwd = forward
-    
+
     # convert the z array to C
     cdef np.ndarray[double, mode="c", ndim=2] z_arr
     z_arr = np.ascontiguousarray(z, dtype=np.float64)
