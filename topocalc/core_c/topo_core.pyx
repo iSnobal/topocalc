@@ -7,6 +7,7 @@ import numpy as np
 cimport numpy as np
 import ctypes
 
+include "illumination_angle.pyx"
 
 # Numpy must be initialized. When using numpy from C or Cython you must
 # _always_ do that, or you will have segfaults
@@ -87,4 +88,3 @@ def c_hor2d(np.ndarray[double, mode="c", ndim=2] z,
 
     # call the hor2d C function
     hor2d(nrows, ncols, &z_arr[0,0], cspacing, fwd, &hcos[0,0])
-

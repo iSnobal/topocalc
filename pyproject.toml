@@ -46,3 +46,8 @@ include = ["topocalc", "topocalc.*"]
 [tool.setuptools_scm]
 local_scheme = 'node-and-date'
 write_to = "topocalc/version.py"
+
+[tool.ruff]
+exclude = [
+    "*.pyx",
+]

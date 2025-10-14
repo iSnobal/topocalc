@@ -13,9 +13,10 @@ source_location = Path("topocalc") / "core_c"
 
 extensions = [
     Extension(
-        "topocalc.core_c.topo_core",
+        "topocalc.topo_core",
         sources=[
-            str(source_location / f"topo_core.pyx"),
+            str(source_location / "illumination_angle.pyx"),
+            str(source_location / "topo_core.pyx"),
             str(source_location / "hor1d.c"),
         ],
         include_dirs=[numpy.get_include()],
@@ -25,6 +26,7 @@ extensions = [
 ]
 
 setup(
+    name="topocalc",
     cmdclass={"build_ext": build_ext},
     ext_modules = extensions
 )

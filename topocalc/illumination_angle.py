@@ -1,5 +1,7 @@
 import numpy as np
 
+from topocalc.topo_core import illumination_angle_c
+
 
 def illumination_angle(slope, aspect, azimuth, cos_z=None, zenith=None):
     """
@@ -37,7 +39,6 @@ def illumination_angle(slope, aspect, azimuth, cos_z=None, zenith=None):
     as close as possible. All equations are based on Dozier & Frew, 1990.
     'Rapid calculation of Terrain Parameters For Radiation Modeling From Digital
     Elevation Data,' IEEE Transactions on Geoscience and Remote Sensing
-
     """
 
     # process the options
@@ -46,8 +47,6 @@ def illumination_angle(slope, aspect, azimuth, cos_z=None, zenith=None):
             raise Exception("cos_z must be > 0 and <= 1")
 
         c_theta = cos_z
-        zenith = np.arccos(c_theta)  # in radians
-        s_theta = np.sin(zenith)
 
     elif zenith is not None:
         if (zenith < 0) or (zenith >= 90):
@@ -55,7 +54,6 @@ def illumination_angle(slope, aspect, azimuth, cos_z=None, zenith=None):
 
         zenith *= np.pi / 180.0  # in radians
         c_theta = np.cos(zenith)
-        s_theta = np.sin(zenith)
 
     else:
         raise Exception("Must specify either cos_z or zenith")
@@ -66,19 +64,4 @@ def illumination_angle(slope, aspect, azimuth, cos_z=None, zenith=None):
     if (azimuth > 180) or (azimuth < -180):
         raise Exception("Azimuth must be between -180 and 180 degrees")
 
-    azimuth *= np.pi / 180
-
-    # Slope angles are passed in as sin(S)
-    # Extract the cosine by using the identity:
-    #   cos^2(s) = 1 - sin^2(s)
-    # Second identity: 1^2 - sin^2(z) = (1 - sin(z)) * (1 + sin(z))
-    #   cos(z) = np.sqrt((1 - sin(z)) * (1 + sin(z)))
-    cos_z = np.sqrt((1 - slope) * (1 + slope))
-
-    # cosine of local illumination angle
-    mu = c_theta * cos_z + s_theta * slope * np.cos(azimuth - aspect)
-
-    mu[mu < 0] = 0
-    mu[mu > 1] = 1
-
-    return mu
+    return illumination_angle_c(slope, aspect, azimuth, c_theta)

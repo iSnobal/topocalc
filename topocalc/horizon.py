@@ -1,6 +1,6 @@
 import numpy as np
 
-from topocalc.core_c import topo_core
+from topocalc import topo_core
 from topocalc.skew import adjust_spacing, skew
 
 

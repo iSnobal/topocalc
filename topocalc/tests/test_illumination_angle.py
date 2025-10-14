@@ -9,7 +9,7 @@ ZENITH = 45
 AZIMUTH = 0
 
 
-class TestShade(unittest.TestCase):
+class TestIlluminationAngle(unittest.TestCase):
     # with self.dx and self.dy equal to 1, the cardinal direction
     # slope values will be np.pi/4 as one of the differences will be zero
     dx = 1
