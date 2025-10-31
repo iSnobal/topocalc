@@ -83,10 +83,6 @@ def c_hor2d(
     cdef:
         int nrows = z.shape[0]
         int ncols = z.shape[1]
-        np.ndarray[double, ndim=2, mode="c"] z_arr
-
-    # Ensure consistent memory layout
-    z_arr = np.ascontiguousarray(z, dtype=np.float64)
 
     # Call the hor2d C function
-    hor2d(nrows, ncols, &z_arr[0,0], spacing, forward, &hcos[0,0])
+    hor2d(nrows, ncols, &z[0,0], spacing, forward, &hcos[0,0])
