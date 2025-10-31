@@ -8,9 +8,6 @@ from topocalc.horizon import hor2d_c, horizon
 class TestHorizon(unittest.TestCase):
 
     def test_horizon_dem_errors(self):
-        """Test the horizon function errors
-        """
-
         dem = np.ones((10))
 
         with self.assertRaises(ValueError) as context:
@@ -57,7 +54,10 @@ class TestHorizonGold(unittest.TestCase):
         hgt = surface[gold_index] - surface
         d = distance[gold_index] - distance
 
-        hcos = hgt / np.sqrt(hgt**2 + d**2)
+        # Some elevations are 0. Suppressing the warning for division by that
+        with np.errstate(invalid='ignore'):
+            hcos = hgt / np.sqrt(hgt**2 + d**2)
+
         hcos[np.isnan(hcos)] = 0
 
         return hcos
