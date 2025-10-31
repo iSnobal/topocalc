@@ -36,7 +36,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr htmlcov/
 	rm -fr .pytest_cache
 
-tests: ## run tests quickly with the default Python
+tests: build-cython ## run tests quickly with the default Python
 	python -m unittest discover topocalc/tests
 
 test-all: ## run tests on every Python version with tox
