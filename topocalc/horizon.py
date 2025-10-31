@@ -1,6 +1,6 @@
 import numpy as np
 
-from topocalc.core_c import topo_core
+from topocalc import topo_core
 from topocalc.skew import adjust_spacing, skew
 
 
@@ -44,8 +44,9 @@ def transpose_skew(dem, spacing, angle):
     return t, spacing
 
 
-def horizon(azimuth, dem, spacing):
-    """Calculate horizon angles for one direction. Horizon angles
+def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
+    """
+    Calculate horizon angles for one direction. Horizon angles
     are based on Dozier and Frew 1990 and are adapted from the
     IPW C code.
 
@@ -60,8 +61,9 @@ def horizon(azimuth, dem, spacing):
         spacing {float} -- grid spacing
 
     Returns:
-        hcos {np.array} -- cosines of angles to the horizon
+        horizon_angles_cos {np.array} -- cosines of angles to the horizon
     """
+    horizon_angles_cos = np.zeros_like(dem)
 
     if dem.ndim != 2:
         raise ValueError('horizon input of dem is not a 2D array')
@@ -71,66 +73,63 @@ def horizon(azimuth, dem, spacing):
 
     if azimuth == 90:
         # East
-        hcos = hor2d_c(dem, spacing, fwd=True)
+        horizon_angles_cos = hor2d_c(dem, spacing, fwd=True)
 
     elif azimuth == -90:
         # West
-        hcos = hor2d_c(dem, spacing, fwd=False)
+        horizon_angles_cos = hor2d_c(dem, spacing, fwd=False)
 
     elif azimuth == 0:
         # South
-        hcos = hor2d_c(dem.transpose(), spacing, fwd=True)
-        hcos = hcos.transpose()
+        horizon_angles_cos = hor2d_c(dem.transpose(), spacing, fwd=True)
+        horizon_angles_cos = horizon_angles_cos.transpose()
 
     elif np.abs(azimuth) == 180:
         # South
-        hcos = hor2d_c(dem.transpose(), spacing, fwd=False)
-        hcos = hcos.transpose()
+        horizon_angles_cos = hor2d_c(dem.transpose(), spacing, fwd=False)
+        horizon_angles_cos = horizon_angles_cos.transpose()
 
     elif azimuth >= -45 and azimuth <= 45:
         # South west through south east
         t, spacing = skew_transpose(dem, spacing, azimuth)
         h = hor2d_c(t, spacing, fwd=True)
-        hcos = skew(h.transpose(), azimuth, fwd=False)
+        horizon_angles_cos = skew(h.transpose(), azimuth, fwd=False)
 
     elif azimuth <= -135 and azimuth > -180:
         # North west
         a = azimuth + 180
         t, spacing = skew_transpose(dem, spacing, a)
         h = hor2d_c(t, spacing, fwd=False)
-        hcos = skew(h.transpose(), a, fwd=False)
+        horizon_angles_cos = skew(h.transpose(), a, fwd=False)
 
     elif azimuth >= 135 and azimuth < 180:
         # North East
         a = azimuth - 180
         t, spacing = skew_transpose(dem, spacing, a)
         h = hor2d_c(t, spacing, fwd=False)
-        hcos = skew(h.transpose(), a, fwd=False)
+        horizon_angles_cos = skew(h.transpose(), a, fwd=False)
 
     elif azimuth > 45 and azimuth < 135:
         # South east through north east
         a = 90 - azimuth
         t, spacing = transpose_skew(dem, spacing, a)
         h = hor2d_c(t, spacing, fwd=True)
-        hcos = skew(h.transpose(), a, fwd=False).transpose()
+        horizon_angles_cos = skew(h.transpose(), a, fwd=False).transpose()
 
     elif azimuth < -45 and azimuth > -135:
         # South west through north west
         a = -90 - azimuth
         t, spacing = transpose_skew(dem, spacing, a)
         h = hor2d_c(t, spacing, fwd=False)
-        hcos = skew(h.transpose(), a, fwd=False).transpose()
+        horizon_angles_cos = skew(h.transpose(), a, fwd=False).transpose()
 
     else:
         ValueError('azimuth not valid')
 
-    # sanity check
-    assert hcos.shape == dem.shape
-
-    return hcos
+    return horizon_angles_cos
 
 
-def hor2d_c(z, spacing, fwd=True):
+def hor2d_c(elevations: np.ndarray, spacing: float, fwd=True) -> np.ndarray:
     """
     Calculate values of cosines of angles to horizons in 2 dimension,
     measured from zenith, from elevation difference and distance.  Let
@@ -141,26 +140,27 @@ def hor2d_c(z, spacing, fwd=True):
     This result is the same as cos H, where H measured from zenith.
 
     Args:
-        z: elevation array
+        elevations: elevation array
         spacing: spacing of array
+        fwd: Direction to check for horizon
 
     Returns:
         hcos: cosines of angles to horizon
     """
 
-    if z.ndim != 2:
-        raise ValueError('hor1d input of z is not a 2D array')
+    if elevations.ndim != 2:
+        raise ValueError("Input array of z is not a 2D array")
 
-    if z.dtype != np.double:
-        raise ValueError('hor1d input of z must be a double')
+    if elevations.dtype != np.double:
+        raise ValueError("Input array of z must be of type double")
 
     spacing = np.double(spacing)
 
-    z = np.ascontiguousarray(z)
+    elevations = np.ascontiguousarray(elevations)
 
-    h = np.zeros_like(z)
+    h = np.zeros_like(elevations)
 
-    topo_core.c_hor2d(z, spacing, fwd, h)
+    topo_core.c_hor2d(elevations, spacing, fwd, h)
 
     # if not fwd:
     #     h = np.fliplr(h)

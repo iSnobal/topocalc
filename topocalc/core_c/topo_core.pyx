@@ -1,95 +1,88 @@
-# cython: embedsignature=True
-# distutils: language=3
 """
 C implementation of some radiation functions
 """
-
+# cython: language_level=3
+# cython: boundscheck=False
+# cython: wraparound=False
+# cython: cdivision=True
+# distutils: language = c
+# distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 
 import cython
 import numpy as np
 cimport numpy as np
-import ctypes
-# from cpython cimport bool
-# from libcpp cimport bool
 
+include "illumination_angle.pyx"
 
 # Numpy must be initialized. When using numpy from C or Cython you must
 # _always_ do that, or you will have segfaults
 np.import_array()
 
 cdef extern from "topo_core.h":
-    void hor1f(int n, double *z, int *h);
-    void hor1b(int n, double *z, int *h);
-    void horval(int n, double *z, double delta, int *h, double *hcos);
-    void hor2d(int n, int m, double *z, double delta, bint forward, double *hcos);
+    void hor1f(int n, double *z, int *h)
+    void hor1b(int n, double *z, int *h)
+    void horval(int n, double *z, double delta, int *h, double *hcos)
+    void hor2d(int n, int m, double *z, double delta, bint forward, double *hcos)
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-# https://github.com/cython/cython/wiki/tutorials-NumpyPointerToC
-def c_hor1d(np.ndarray[double, mode="c", ndim=1] z,
-           double spacing,
-           bint forward,
-           np.ndarray[double, mode="c", ndim=1] hcos):
+def c_hor1d(
+    np.ndarray[double, ndim=1, mode="c"] z not None,
+    double spacing,
+    bint forward,
+    np.ndarray[double, ndim=1, mode="c"] hcos not None
+):
     """
     Call the function hor1f in hor1f.c
-
-    https://stackoverflow.com/questions/23435756/passing-numpy-integer-array-to-c-code
 
     Args:
         z: elevation array
         spacing: grid spacing
-    
+        forward: whether to process forward or backward
+        hcos: cosine angle of horizon array (output)
+
     Returns
         hcos: cosine angle of horizon array changed in place
     """
+    cdef:
+        int n = z.shape[0]
+        np.ndarray[double, ndim=1, mode="c"] z_arr
+        np.ndarray[int, ndim=1, mode="c"] h
 
-    cdef int n
-    n = z.shape[0]
-
-    # convert the z array to C
-    cdef np.ndarray[double, mode="c", ndim=1] z_arr
+    # Ensure consistent memory layout
     z_arr = np.ascontiguousarray(z, dtype=np.float64)
 
-    # integer array for horizon index
-    cdef np.ndarray[int, ndim=1, mode='c'] h = np.empty((n,), dtype = ctypes.c_int)
+    # Integer array for horizon index
+    h = np.empty(n, dtype=np.int32)
 
-    # call the hor1f C function
+    # Call the appropriate C function based on direction
     if forward:
         hor1f(n, &z_arr[0], &h[0])
     else:
         hor1b(n, &z_arr[0], &h[0])
-    
-    # call the horval C function
+
+    # Calculate horizon values
     horval(n, &z_arr[0], spacing, &h[0], &hcos[0])
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-# https://github.com/cython/cython/wiki/tutorials-NumpyPointerToC
-def c_hor2d(np.ndarray[double, mode="c", ndim=2] z,
-           double spacing,
-           bint forward,
-           np.ndarray[double, mode="c", ndim=2] hcos):
+def c_hor2d(
+    np.ndarray[double, ndim=2, mode="c"] z not None,
+    double spacing,
+    bint forward,
+    np.ndarray[double, ndim=2, mode="c"] hcos not None
+):
     """
-    Call the function hor1f in hor1f.c
+    Call the function hor2d in topo_core.c
 
     Args:
         z: elevation array
         spacing: grid spacing
-    
+        forward: whether to process forward or backward
+        hcos: cosine angle of horizon array (output)
+
     Returns
         hcos: cosine angle of horizon array changed in place
     """
+    cdef:
+        int nrows = z.shape[0]
+        int ncols = z.shape[1]
 
-    cdef int nrows = z.shape[0]
-    cdef int ncols = z.shape[1]
-    cdef double cspacing = spacing
-
-    cdef bint fwd = forward
-    
-    # convert the z array to C
-    cdef np.ndarray[double, mode="c", ndim=2] z_arr
-    z_arr = np.ascontiguousarray(z, dtype=np.float64)
-
-    # call the hor2d C function
-    hor2d(nrows, ncols, &z_arr[0,0], cspacing, fwd, &hcos[0,0])
-
+    # Call the hor2d C function
+    hor2d(nrows, ncols, &z[0,0], spacing, forward, &hcos[0,0])
