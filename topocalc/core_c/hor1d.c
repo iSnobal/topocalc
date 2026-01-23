@@ -94,8 +94,7 @@ int hor1f(
     * beginning.  For backward direction, loop runs from
     * next-to-beginning forward to end.
     */
-    #pragma omp private(slope_ik, max_slope, max_point, zi, dist)
-    #pragma omp parallel for schedule(static) private(k) shared(h, z)
+    #pragma omp parallel for schedule(static) private(i, k, slope_ik, max_slope, max_point, zi, dist) shared(h, z, n)
     for (i = n - 2; i >= 0; --i)
     {
         zi = z[i];
@@ -167,8 +166,7 @@ int hor1b(
     * beginning.  For backward direction, loop runs from
     * next-to-beginning forward to end.
     */
-    #pragma omp private(slope_ik, max_slope, max_point, zi, dist)
-    #pragma omp parallel for schedule(static) private(k) shared(h, z)
+    #pragma omp parallel for schedule(static) private(i, k, slope_ik, max_slope, max_point, zi, dist) shared(h, z, n)
     for (i = 1; i < n; ++i)
     {
         zi = z[i];
