@@ -4,20 +4,6 @@ from topocalc.gradient import gradient_d8
 from topocalc.horizon import horizon
 
 
-def d2r(a):
-    """Angle to radians
-
-    Arguments:
-        a {float} -- angle in degrees
-
-    Returns:
-        v {float} -- angle in radians
-    """
-    v = a * np.pi / 180
-    v = round(v, 6)  # just for testing at the moment
-    return v
-
-
 def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
     """
     Calculate the sky view factor of a dem.
@@ -62,15 +48,10 @@ def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
     if nangles < 16:
         raise ValueError("viewf number of angles should be 16 or greater")
 
-    if sin_slope is not None:
-        if np.max(sin_slope) > 1:
-            raise ValueError("slope must be sin(slope) with range from 0 to 1")
-
-    # calculate the gradient if not provided
+    # calculate the gradient
     # The slope is returned as radians so convert to sin(S)
-    if sin_slope is None:
-        slope, aspect = gradient_d8(dem, dx=spacing, dy=spacing, aspect_rad=True)
-        sin_slope = np.sin(slope).astype(np.float32)
+    slope, aspect = gradient_d8(dem, dx=spacing, dy=spacing, aspect_rad=True)
+    sin_slope = np.sin(slope).astype(np.float32)
     tan_slope = np.tan(slope).astype(np.float32)
 
     # -180 is North
@@ -84,7 +65,7 @@ def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
         # horizon angles
         hcos = horizon(angle, dem, spacing)
         h = np.arccos(hcos)
-        azimuth = d2r(angle)
+        azimuth = np.radians(angle)
 
         # cosines of difference between horizon aspect and slope aspect
         cos_aspect = np.cos(azimuth - aspect)
