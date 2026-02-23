@@ -67,7 +67,7 @@ class TestHorizonLakes(unittest.TestCase):
         if not os.path.exists(cls.gold_path):
             raise FileNotFoundError(f"Missing horizons: {cls.gold_path}")
 
-        cls.dem = np.load(cls.topo_path)
+        cls.dem = np.load(cls.topo_path).astype('double')
         cls.gold_data = np.load(cls.gold_path)
 
     def test_lakes_horizon_files(self):
@@ -79,7 +79,7 @@ class TestHorizonLakes(unittest.TestCase):
 
             # NOTE Only runs test within a certain buffer away from the edge
             with self.subTest(azimuth=azimuth):
-                h_gold = self.gold_data[key]
+                h_gold = self.gold_data[key].astype('double')
                 h_calc = horizon(azimuth, self.dem, self.DX)
                 h_calc = np.maximum(h_calc, 0)
                 b = self.EDGE_BUFFER
