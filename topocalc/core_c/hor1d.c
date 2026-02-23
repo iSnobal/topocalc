@@ -9,205 +9,100 @@
 #include <omp.h>
 #include "topo_core.h"
 
+/*
+ * 1D horizon function (forward or backward direction)
+ */
+int hor1d(
+    int n,         /* length of vectors z and h */
+    double *z,     /* elevation function */
+    int *h,        /* horizon function (return) */
+    bool forward)  /* direction: true for forward, false for backward */
+{
+    int i, k;
+
+    // Set boundary condition
+    if (forward) {
+        h[n - 1] = n - 1;
+    } else {
+        h[0] = 0;
+    }
+
+    /*
+     * Main loop. Parallelized only if not already inside a parallel region
+     * (e.g., when called for a single row).
+     */
+    #pragma omp parallel for schedule(static) if(!omp_in_parallel())
+    for (i = 0; i < n; i++) {
+        // Skip boundary point based on direction
+        if (forward && i == n - 1) continue;
+        if (!forward && i == 0) continue;
+
+        double zi = z[i];
+        double max_slope = 0.0;
+        int max_point = i;
+
+        if (forward) {
+            for (k = i + 1; k < n; k++) {
+                if (z[k] > zi) {
+                    double dist = (double)(k - i);
+                    double slope = (z[k] - zi) / dist;
+                    if (slope > max_slope) {
+                        max_slope = slope;
+                        max_point = k;
+                    }
+                }
+            }
+        } else {
+            for (k = i - 1; k >= 0; k--) {
+                if (z[k] > zi) {
+                    double dist = (double)(i - k);
+                    double slope = (z[k] - zi) / dist;
+                    if (slope > max_slope) {
+                        max_slope = slope;
+                        max_point = k;
+                    }
+                }
+            }
+        }
+        h[i] = max_point;
+    }
+    return 0;
+}
+
+/*
+ * Optimized 2D horizon function
+ */
 void hor2d(
     int nrows,    /* rows of elevations array */
     int ncols,    /* columns of elevations array */
     double *z,    /* elevations */
     double delta, /* spacing */
-    bool forward, /* forward function */
+    bool forward, /* forward direction flag */
     double *hcos) /* cosines of angles to horizon */
 {
-    int i, j; /* loop index */
-
     /*
-    * Allocate an array for the line buffers to populate
-    */
-    int *hbuf;
-    hbuf = (int *)calloc(ncols, sizeof(int));
-
-    double *obuf;
-    obuf = (double *)calloc(ncols, sizeof(double));
-
-    double *zbuf;
-    zbuf = (double *)calloc(ncols, sizeof(double));
-
-    /*
-     * main loop, read in full line at a time
+     * Parallelize over rows. Each thread gets its own small horizon buffer
+     * to avoid memory allocation inside the loop and eliminate redundant copies.
      */
-    for (i = 0; i < nrows; i++)
+    #pragma omp parallel
     {
-        // Fill the zbuf with the rows elevation
-        for (j = 0; j < ncols; j++)
+        int *hbuf = (int *)malloc(ncols * sizeof(int));
+
+        #pragma omp for schedule(dynamic)
+        for (int i = 0; i < nrows; i++)
         {
-            zbuf[j] = z[j + ncols * i];
+            double *z_row = &z[i * ncols];
+            double *hcos_row = &hcos[i * ncols];
+
+            // Calculate horizon indices for this row
+            hor1d(ncols, z_row, hbuf, forward);
+
+            // Compute cosine values directly into the output array
+            horval(ncols, z_row, delta, hbuf, hcos_row);
         }
 
-        /*
-    	 * find points that form horizons
-    	 */
-        if (forward)
-        {
-            hor1f(ncols, zbuf, hbuf);
-        }
-        else
-        {
-            hor1b(ncols, zbuf, hbuf);
-        }
-
-        /*
-    	 * if not mask output, compute and write horizons along each row
-    	 */
-        horval(ncols, zbuf, delta, hbuf, obuf);
-
-        for (j = 0; j < ncols; j++)
-        {
-            hcos[i * ncols + j] = obuf[j];
-        }
+        free(hbuf);
     }
-}
-
-/*
-* hor1f from hor1f.c in IPW
-* https://github.com/USDA-ARS-NWRC/ipw/blob/main/src/bin/topocalc/horizon/hor1d/hor1f.c
-*/
-int hor1f(
-    int n,     /* length of vectors b and h */
-    double *z, /* elevation function */
-    int *h)    /* horizon function (return) */
-{
-    int i;            /* current point index */
-    int k;            /* search point index */
-    double slope_ik;  /* slope i to k */
-    double max_slope; /* max slope value */
-    int max_point;    /* point with max horizon */
-    double zi;        /* z[i] */
-    double dist;      /* difference between i and k */
-
-    /*
-    * end point is its own horizon in forward direction; first point is
-    * its own horizon in backward direction
-    */
-    h[n - 1] = n - 1;
-
-    /*
-    * For forward direction, loop runs from next-to-end backward to
-    * beginning.  For backward direction, loop runs from
-    * next-to-beginning forward to end.
-    */
-    #pragma omp parallel for schedule(static) private(i, k, slope_ik, max_slope, max_point, zi, dist) shared(h, z, n)
-    for (i = n - 2; i >= 0; --i)
-    {
-        zi = z[i];
-
-        /* assume the point is it's own horizon at first*/
-        max_slope = 0.0;
-        max_point = i;
-
-        /*
-        * Start with adjacent point in either forward or backward
-        * direction, depending on which way loop is running. Note,
-        * this differs from the original in that the original started
-        * with the next to adjacent point
-        */
-        for (k = i + 1; k < n; k++)
-        {
-            /*
-            * Only look at points higher than the starting point
-            */
-
-            if (z[k] > zi)
-            {
-                dist = (double)(k - i);
-                slope_ik = (z[k] - zi) / dist;
-
-                /*
-                * Compare each kth point against the maximum slope
-                * already found. If it's slope is greater than the previous
-                * horizon, then it's found a new horizon
-                */
-                if (slope_ik > max_slope)
-                {
-                    max_slope = slope_ik;
-                    max_point = k;
-                }
-            }
-        }
-
-        h[i] = max_point;
-    }
-    return (0);
-}
-
-/*
-* hor1b from hor1b.c in IPW
-* https://github.com/USDA-ARS-NWRC/ipw/blob/main/src/bin/topocalc/horizon/hor1d/hor1b.c
-*/
-int hor1b(
-    int n,     /* length of vectors b and h */
-    double *z, /* elevation function */
-    int *h)    /* horizon function (return) */
-{
-    int i;            /* current point index */
-    int k;            /* search point index */
-    double slope_ik;  /* slope i to k */
-    double max_slope; /* max slope value */
-    int max_point;    /* point with max horizon */
-    double zi;        /* z[i] */
-    double dist;      /* difference between i and k */
-
-    /*
-    * end point is its own horizon in forward direction; first point is
-    * its own horizon in backward direction
-    */
-    h[0] = 0;
-
-    /*
-    * For forward direction, loop runs from next-to-end backward to
-    * beginning.  For backward direction, loop runs from
-    * next-to-beginning forward to end.
-    */
-    #pragma omp parallel for schedule(static) private(i, k, slope_ik, max_slope, max_point, zi, dist) shared(h, z, n)
-    for (i = 1; i < n; ++i)
-    {
-        zi = z[i];
-
-        /* assume the point is it's own horizon at first*/
-        max_slope = 0.0;
-        max_point = i;
-
-        /*
-        * Start with adjacent point in either forward or backward
-        * direction, depending on which way loop is running. Note,
-        * this differs from the original in that the original started
-        * with the next to adjacent point
-        */
-        for (k = i - 1; k >= 0; k--)
-        {
-
-            /*
-            * Only look at points higher than the starting point
-            */
-            if (z[k] > zi)
-            {
-                dist = (double)(i - k);
-                slope_ik = (z[k] - zi) / dist;
-
-                /*
-                * Compare each kth point against the maximum slope
-                * already found. If it's slope is greater than the previous
-                * horizon, then it's found a new horizon
-                */
-                if (slope_ik > max_slope)
-                {
-                    max_slope = slope_ik;
-                    max_point = k;
-                }
-            }
-        }
-
-        h[i] = max_point;
-    }
-    return (0);
 }
 
 /*
@@ -225,32 +120,37 @@ void horval(
     int *h,       /* horizon function */
     double *hcos) /* cosines of angles to horizon */
 {
-    double d;    /* difference in indices */
-    int i;       /* index of point */
-    int j;       /* index of horizon point */
-    double diff; /* elevation difference */
+    int i;
+    const double delta_sq = delta * delta;
 
-    #pragma omp parallel for schedule(static) private(j, d, diff) shared(h, z, hcos)
+    /*
+     * Only parallelize if we aren't already in a parallel region
+     * (e.g., when called for a single row instead of the whole 2D grid)
+     */
+    #pragma omp parallel for schedule(static) if(!omp_in_parallel())
     for (i = 0; i < n; ++i)
     {
+        int j = h[i];
 
-        /* # grid points to horizon */
-        j = h[i];
-        d = (double)(j - i);
-
-        /* point is its own horizon */
-        if (d == 0)
+        // Point is its own horizon
+        if (j == i)
         {
-            hcos[i] = 0;
+            hcos[i] = 0.0;
+            continue;
         }
 
-        /* else need to calculate cosine */
-        else
-        {
-            if (d < 0)
-                d = -d;
-            diff = z[j] - z[i];
-            hcos[i] = diff / (double)hypot(diff, d * delta);
-        }
+        double diff = z[j] - z[i];
+
+        /*
+         * Distance in grid cells. We square it immediately,
+         * so the sign (direction) doesn't matter.
+         */
+        double d_idx = (double)(j - i);
+        double dist_sq = (d_idx * d_idx) * delta_sq;
+
+        /*
+         * cos H = z / sqrt( z^2 + dist^2 )
+         */
+        hcos[i] = diff / sqrt(diff * diff + dist_sq);
     }
 }
