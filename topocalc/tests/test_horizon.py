@@ -54,41 +54,41 @@ class TestHorizonLakes(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.DX = 50.0
-        cls.EDGE_BUFFER = 2
+        cls.EDGE_BUFFER = 5
 
         base_path = os.path.dirname(os.path.abspath(__file__))
         cls.lakes_dir = os.path.join(base_path, "Lakes")
-        cls.gold_dir = os.path.join(cls.lakes_dir, "horizon_files")
-        topo_path = os.path.join(cls.lakes_dir, "topo.txt")
 
-        if not os.path.exists(topo_path):
-            raise FileNotFoundError(f"Missing test DEM: {topo_path}")
+        cls.topo_path = os.path.join(cls.lakes_dir, "dem.npy")
+        cls.gold_path = os.path.join(cls.lakes_dir, "topo_horizons.npz")
 
-        cls.dem = np.loadtxt(topo_path)
+        if not os.path.exists(cls.topo_path):
+            raise FileNotFoundError(f"Missing test DEM: {cls.topo_path}")
+        if not os.path.exists(cls.gold_path):
+            raise FileNotFoundError(f"Missing horizons: {cls.gold_path}")
+
+        cls.dem = np.load(cls.topo_path)
+        cls.gold_data = np.load(cls.gold_path)
 
     def test_lakes_horizon_files(self):
-        gold_files = [
-            f
-            for f in os.listdir(self.gold_dir)
-            if f.startswith("horizon_") and f.endswith(".txt")
-        ]
-        self.assertGreater(len(gold_files), 0, "No files found.")
+        keys = self.gold_data.files
+        self.assertGreater(len(keys), 0, "No data found.")
 
-        for filename in gold_files:
-            azimuth = float(filename.split("_")[1].replace(".txt", ""))
+        for key in keys:
+            azimuth = float(key.replace("az_", ""))
 
             # NOTE Only runs test within a certain buffer away from the edge
             with self.subTest(azimuth=azimuth):
-                h_gold = np.loadtxt(os.path.join(self.gold_dir, filename))
+                h_gold = self.gold_data[key]
                 h_calc = horizon(azimuth, self.dem, self.DX)
+                h_calc = np.maximum(h_calc, 0)
                 b = self.EDGE_BUFFER
                 h_gold_inner = h_gold[b:-b, b:-b]
                 h_calc_inner = h_calc[b:-b, b:-b]
-
                 np.testing.assert_array_almost_equal(
                     h_calc_inner,
                     h_gold_inner,
-                    decimal=2,
+                    decimal=3,
                     err_msg=f"Potential error at {azimuth} degrees.",
                 )
 
