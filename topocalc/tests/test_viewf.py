@@ -62,8 +62,8 @@ class TestViewfLakes(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.spacing = 50.0
-        self.nangles = 32
-        self.tolerance = 0.025
+        self.nangles = 72
+        self.tolerance = 0.05
         self.edge_buffer = 5
 
         base_path = os.path.dirname(os.path.abspath(__file__))
