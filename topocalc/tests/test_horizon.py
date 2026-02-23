@@ -49,7 +49,8 @@ class TestHorizonGold(unittest.TestCase):
     def assert_horizon(self, surf, gold_index):
         hcos_gold = self.calc_gold_horizon(surf, gold_index)
         hcos = horizon(90, surf.reshape(1, -1), self.DX)
-        np.testing.assert_approx_equal(hcos_gold.reshape(1, -1), hcos, significant=7)
+        np.testing.assert_allclose(hcos_gold.reshape(1, -1), hcos, rtol=1e-7,
+                    atol=1e-7)
 
     def test_horizon1(self):
         surf = np.array([100.0, 80, 75, 85, 70, 50, 64, 65, 85, 90])
@@ -107,9 +108,10 @@ class TestHorizonLakesData(unittest.TestCase):
                 h_lakes = h_lakes[b:-b, b:-b]
                 h_calc = h_calc[b:-b, b:-b]
 
-                np.testing.assert_approx_equal(
+                np.testing.assert_allclose(
                     h_calc,
                     h_lakes,
-                    significant=7,
+                    rtol=1e-7,
+                    atol=1e-7,
                     err_msg=f"Potential error at {azimuth} degrees.",
                 )
