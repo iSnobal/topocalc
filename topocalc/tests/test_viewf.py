@@ -59,8 +59,7 @@ class TestViewf(unittest.TestCase):
 
 
 class TestViewfLakes(unittest.TestCase):
-    """New tests comparing viewf output to QGIS/Field data for the Lakes site."""
-
+    @classmethod
     def setUpClass(self):
         self.spacing = 50.0
         self.nangles = 32
