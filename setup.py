@@ -15,7 +15,6 @@ extensions = [
     Extension(
         "topocalc.topo_core",
         sources=[
-            str(source_location / "illumination_angle.pyx"),
             str(source_location / "topo_core.pyx"),
             str(source_location / "hor1d.c"),
         ],
