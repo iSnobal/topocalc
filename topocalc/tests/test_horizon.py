@@ -49,7 +49,7 @@ class TestHorizonGold(unittest.TestCase):
     def assert_horizon(self, surf, gold_index):
         hcos_gold = self.calc_gold_horizon(surf, gold_index)
         hcos = horizon(90, surf.reshape(1, -1), self.DX)
-        np.testing.assert_array_almost_equal(hcos_gold.reshape(1, -1), hcos, decimal=6)
+        np.testing.assert_approx_equal(hcos_gold.reshape(1, -1), hcos, significant=7)
 
     def test_horizon1(self):
         surf = np.array([100.0, 80, 75, 85, 70, 50, 64, 65, 85, 90])
@@ -75,6 +75,11 @@ class TestHorizonLakesData(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # NOTE Only runs test within a certain buffer away from the edge
+        # This a typical use case, as one should prepare basin file that is
+        # at least 0.2-0.5 km past the extent of the watershed to capture nearby terrain.
+        # But presently, since we use a linear interpolation along the line,
+        # the first row, and first column data will always be in error.
         cls.DX = 50.0
         cls.EDGE_BUFFER = 5
 
@@ -84,7 +89,7 @@ class TestHorizonLakesData(unittest.TestCase):
         cls.topo_path = cls.lakes_dir / "dem.npy"
         cls.lakes_path = cls.lakes_dir / "topo_horizons.npz"
 
-        cls.dem = np.load(cls.topo_path).astype("double")
+        cls.dem = np.load(cls.topo_path)
         cls.lakes_data = np.load(cls.lakes_path)
 
     def test_lakes_horizon_files(self):
@@ -93,9 +98,8 @@ class TestHorizonLakesData(unittest.TestCase):
         for key in keys:
             azimuth = float(key.replace("az_", ""))
 
-            # NOTE Only runs test within a certain buffer away from the edge
             with self.subTest(azimuth=azimuth):
-                h_lakes = self.lakes_data[key].astype("double")
+                h_lakes = self.lakes_data[key]
                 h_calc = horizon(azimuth, self.dem, self.DX)
                 h_calc = np.maximum(h_calc, 0)
 
@@ -103,9 +107,9 @@ class TestHorizonLakesData(unittest.TestCase):
                 h_lakes = h_lakes[b:-b, b:-b]
                 h_calc = h_calc[b:-b, b:-b]
 
-                np.testing.assert_array_almost_equal(
+                np.testing.assert_approx_equal(
                     h_calc,
                     h_lakes,
-                    decimal=3,
+                    significant=7,
                     err_msg=f"Potential error at {azimuth} degrees.",
                 )
