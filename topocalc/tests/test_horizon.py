@@ -1,6 +1,6 @@
 import unittest
+from pathlib import Path
 import numpy as np
-import os
 from topocalc.horizon import hor2d_c, horizon
 
 
@@ -25,6 +25,14 @@ class TestHorizon(unittest.TestCase):
             hor2d_c(dem, 1)
         self.assertIn("z is not a 2D array", str(context.exception))
 
+    def test_hor2dc_type_errors(self):
+        dem = np.float32(np.ones((10, 1)))
+
+        with self.assertRaises(ValueError) as context:
+            hor2d_c(dem, 1)
+
+        self.assertIn("z must be of type double", str(context.exception))
+
 
 class TestHorizonGold(unittest.TestCase):
     DX = 30
@@ -48,50 +56,56 @@ class TestHorizonGold(unittest.TestCase):
         gold_index = np.array([0, 3, 3, 9, 9, 6, 8, 8, 9, 9])
         self.assert_horizon(surf, gold_index)
 
+    def test_horizon2(self):
 
-class TestHorizonLakes(unittest.TestCase):
+        surf = np.array([100.0, 80, 75, 85, 70, 80, 64, 65, 70, 90])
+        gold_index = np.array([0, 3, 3, 9, 5, 9, 9, 9, 9, 9])
+
+        self.assert_horizon(surf, gold_index)
+
+    def test_horizon3(self):
+
+        surf = np.array([0.0, 5, 7, 20, 18, 30, 30, 35, 20, 21])
+        gold_index = np.array([3, 3, 3, 5, 5, 7, 7, 7, 9, 9])
+
+        self.assert_horizon(surf, gold_index)
+
+
+class TestHorizonLakesData(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.DX = 50.0
         cls.EDGE_BUFFER = 5
 
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        cls.lakes_dir = os.path.join(base_path, "Lakes")
+        base_path = Path(__file__).resolve().parent
+        cls.lakes_dir = base_path / "Lakes"
 
-        cls.topo_path = os.path.join(cls.lakes_dir, "dem.npy")
-        cls.gold_path = os.path.join(cls.lakes_dir, "topo_horizons.npz")
-
-        if not os.path.exists(cls.topo_path):
-            raise FileNotFoundError(f"Missing test DEM: {cls.topo_path}")
-        if not os.path.exists(cls.gold_path):
-            raise FileNotFoundError(f"Missing horizons: {cls.gold_path}")
+        cls.topo_path = cls.lakes_dir / "dem.npy"
+        cls.lakes_path = cls.lakes_dir / "topo_horizons.npz"
 
         cls.dem = np.load(cls.topo_path).astype("double")
-        cls.gold_data = np.load(cls.gold_path)
+        cls.lakes_data = np.load(cls.lakes_path)
 
     def test_lakes_horizon_files(self):
-        keys = self.gold_data.files
-        self.assertGreater(len(keys), 0, "No data found.")
+        keys = self.lakes_data.files
 
         for key in keys:
             azimuth = float(key.replace("az_", ""))
 
             # NOTE Only runs test within a certain buffer away from the edge
             with self.subTest(azimuth=azimuth):
-                h_gold = self.gold_data[key].astype("double")
+                h_lakes = self.lakes_data[key].astype("double")
                 h_calc = horizon(azimuth, self.dem, self.DX)
                 h_calc = np.maximum(h_calc, 0)
+
                 b = self.EDGE_BUFFER
-                h_gold_inner = h_gold[b:-b, b:-b]
-                h_calc_inner = h_calc[b:-b, b:-b]
+                h_lakes = h_lakes[b:-b, b:-b]
+                h_calc = h_calc[b:-b, b:-b]
+
                 np.testing.assert_array_almost_equal(
-                    h_calc_inner,
-                    h_gold_inner,
+                    h_calc,
+                    h_lakes,
                     decimal=3,
                     err_msg=f"Potential error at {azimuth} degrees.",
                 )
-
-
-if __name__ == "__main__":
-    unittest.main()
