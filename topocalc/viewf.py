@@ -4,20 +4,6 @@ from topocalc.gradient import gradient_d8
 from topocalc.horizon import horizon
 
 
-def d2r(a):
-    """Angle to radians
-
-    Arguments:
-        a {float} -- angle in degrees
-
-    Returns:
-        v {float} -- angle in radians
-    """
-    v = a * np.pi / 180
-    v = round(v, 6)  # just for testing at the moment
-    return v
-
-
 def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
     """
     Calculate the sky view factor of a dem.
@@ -25,7 +11,7 @@ def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
     The sky view factor from equation 7b from Dozier and Frew 1990
 
     .. math::
-        V_d \approx \frac{1}{2\pi} \int_{0}^{2\pi}\left [ cos(S) sin^2{H_\phi} 
+        V_d \approx \frac{1}{2\pi} \int_{0}^{2\pi}\left [ cos(S) sin^2{H_\phi}
         + sin(S)cos(\phi-A) \times \left ( H_\phi - sin(H_\phi) cos(H_\phi)
         \right )\right ] d\phi
 
@@ -57,21 +43,16 @@ def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
     """  # noqa
 
     if dem.ndim != 2:
-        raise ValueError('viewf input of dem is not a 2D array')
+        raise ValueError("viewf input of dem is not a 2D array")
 
     if nangles < 16:
-        raise ValueError('viewf number of angles should be 16 or greater')
+        raise ValueError("viewf number of angles should be 16 or greater")
 
-    if sin_slope is not None:
-        if np.max(sin_slope) > 1:
-            raise ValueError('slope must be sin(slope) with range from 0 to 1')
-
-    # calculate the gradient if not provided
+    # calculate the gradient
     # The slope is returned as radians so convert to sin(S)
-    if sin_slope is None:
-        slope, aspect = gradient_d8(
-            dem, dx=spacing, dy=spacing, aspect_rad=True)
-        sin_slope = np.sin(slope)
+    slope, aspect = gradient_d8(dem, dx=spacing, dy=spacing, aspect_rad=True)
+    sin_slope = np.sin(slope).astype(np.float32)
+    tan_slope = np.tan(slope).astype(np.float32)
 
     # -180 is North
     angles = np.linspace(-180, 180, num=nangles, endpoint=False)
@@ -83,26 +64,29 @@ def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
 
         # horizon angles
         hcos = horizon(angle, dem, spacing)
-        azimuth = d2r(angle)
-
-        # sin^2(H)
-        sin_squared = (1 - hcos) * (1 + hcos)
-
-        # H - sin(H)cos(H)
-        h_mult = np.arccos(hcos) - np.sqrt(sin_squared) * hcos
+        h = np.arccos(hcos)
+        azimuth = np.radians(angle)
 
         # cosines of difference between horizon aspect and slope aspect
         cos_aspect = np.cos(azimuth - aspect)
 
+        # update horizon for within-pixel topography (Dozier 2022)
+        t = cos_aspect < 0
+        h[t] = np.minimum(
+            h[t],
+            np.arccos(np.sqrt(1 - 1 / (1 + tan_slope[t] ** 2 * cos_aspect[t] ** 2))),
+        )
+
         # integral in equation 7b
-        intgrnd = cos_slope * sin_squared + \
-            sin_slope * cos_aspect * h_mult
+        intgrnd = cos_slope * np.sin(h) ** 2 + sin_slope * cos_aspect * (
+            h - np.sin(h) * np.cos(h)
+        )
 
         ind = intgrnd > 0
         svf[ind] = svf[ind] + intgrnd[ind]
 
     svf = svf / len(angles)
 
-    tcf = (1 + cos_slope)/2 - svf
+    tcf = (1 + cos_slope) / 2 - svf
 
     return svf, tcf
