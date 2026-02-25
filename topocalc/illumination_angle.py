@@ -3,7 +3,13 @@ import numpy as np
 from topocalc.topo_core import illumination_angle_c
 
 
-def illumination_angle(slope, aspect, azimuth, cos_z=None, zenith=None):
+def illumination_angle(
+    slope: np.ndarray,
+    aspect: np.ndarray,
+    azimuth: float,
+    cos_z: float = None,
+    zenith: float = None,
+) -> np.ndarray:
     """
     Calculate the cosine of the local illumination angle over a DEM.
     Solves the following equation

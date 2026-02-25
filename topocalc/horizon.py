@@ -4,7 +4,9 @@ from topocalc import topo_core
 from topocalc.skew import adjust_spacing, skew
 
 
-def skew_transpose(dem, spacing, angle):
+def skew_transpose(
+    dem: np.ndarray, spacing: float, angle: float
+) -> tuple[np.ndarray, float]:
     """Skew and transpose the dem for the given angle.
     Also calculate the new spacing given the skew.
 
@@ -24,7 +26,9 @@ def skew_transpose(dem, spacing, angle):
     return t, spacing
 
 
-def transpose_skew(dem, spacing, angle):
+def transpose_skew(
+    dem: np.ndarray, spacing: float, angle: float
+) -> tuple[np.ndarray, float]:
     """Transpose, skew then transpose a dem for the
     given angle. Also calculate the new spacing
 
@@ -66,10 +70,10 @@ def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
     horizon_angles_cos = np.zeros_like(dem)
 
     if dem.ndim != 2:
-        raise ValueError('horizon input of dem is not a 2D array')
+        raise ValueError("horizon input of dem is not a 2D array")
 
     if azimuth > 180 or azimuth < -180:
-        raise ValueError('azimuth must be between -180 and 180 degrees')
+        raise ValueError("azimuth must be between -180 and 180 degrees")
 
     if azimuth == 90:
         # East
@@ -124,7 +128,7 @@ def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
         horizon_angles_cos = skew(h.transpose(), a, fwd=False).transpose()
 
     else:
-        ValueError('azimuth not valid')
+        ValueError("azimuth not valid")
 
     return horizon_angles_cos
 
@@ -168,7 +172,7 @@ def hor2d_c(elevations: np.ndarray, spacing: float, fwd=True) -> np.ndarray:
     return h
 
 
-def pyhorizon(dem, dx):
+def pyhorizon(dem: np.ndarray, dx: float) -> tuple[np.ndarray, int]:
     """Pure python version of the horizon function.
 
     NOTE: this is fast for small dem's but quite slow
@@ -214,14 +218,15 @@ def pyhorizon(dem, dx):
 
         # horizon location
         hor = np.nanargmax(slope[:, :-1], axis=0)
-        hor = np.append(hor, ncols-1)
+        hor = np.append(hor, ncols - 1)
         hidx = hor.astype(int)
 
         horizon_height_diff = surface[hidx] - surface
         horizon_distance_diff = dx * (hor - col_index)
 
-        new_horizon = horizon_height_diff / \
-            np.sqrt(horizon_height_diff**2 + horizon_distance_diff**2)
+        new_horizon = horizon_height_diff / np.sqrt(
+            horizon_height_diff**2 + horizon_distance_diff**2
+        )
 
         new_horizon[new_horizon < 0] = 0
         new_horizon[np.isnan(new_horizon)] = 0
