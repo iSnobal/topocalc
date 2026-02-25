@@ -5,7 +5,7 @@ to enable some basic maintenance and improvements.
 
 ## Current functionality
 
-The `topocalc` package is a collection of functions to calculate various metrics on a digital elevation model (DEM). The calculations follow the equations laid out in [Dozier and Frew, 1990](https://doi.org/10.1109/36.58986) for the gradient, horizon and sky view factor. Currently the supported calculations are:
+The `topocalc` package is a collection of functions to calculate various metrics on a digital elevation model (DEM). The calculations follow the equations laid out in [Dozier and Frew (1990)](https://doi.org/10.1109/36.58986) and [Dozier (2021)](https://doi.org/10.1109/LGRS.2021.3125278) for the gradient, horizon and sky view factor. Currently the supported calculations are:
 
 1. Gradient for slope and aspect
 2. Horizon angles for an azimuth
@@ -47,6 +47,8 @@ The horizon function will search the entire DEM profile for the horizon by findi
 
 The values reported from `horizon` are cosine of the horizon angle.
 
+The horizon angle is updated to account for within pixel topography as discussed in equation 2 of [Dozier (2021)](https://doi.org/10.1109/LGRS.2021.3125278).
+
 ## Sky view factor
 
 The sky view factor (`svf`) is the amount of the sky that is visible to a particular point. The `svf` is between 0 and 1 with 1 indicating no obstructions from surrounding terrain and 0 indicating full obstruction. The `svf` uses the slope, aspect and horizon angles for 72 directions to estimate the sky view factor for the DEM.
@@ -55,7 +57,7 @@ The sky view factor (`svf`) is the amount of the sky that is visible to a partic
 
 ## Installation
 
-> **NOTE**: `topocalc` has only been tested for Python 3.6 to 3.9 on Linux and MacOSX environments. If building from source, topocalc must be compiled with `gcc`, `clang` will not work if on MacOS.
+> **NOTE**: `topocalc` has only been tested on Linux and MacOSX environments. If building from source, topocalc must be compiled with `gcc`, `clang` will not work if on MacOS.
 
 To install:
 
