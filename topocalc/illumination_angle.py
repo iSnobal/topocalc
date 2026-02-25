@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 
 from topocalc.topo_core import illumination_angle_c
 

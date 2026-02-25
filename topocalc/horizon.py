@@ -1,12 +1,13 @@
 import numpy as np
+import numpy.typing as npt
 
 from topocalc import topo_core
 from topocalc.skew import adjust_spacing, skew
 
 
 def skew_transpose(
-    dem: np.ndarray, spacing: float, angle: float
-) -> tuple[np.ndarray, float]:
+    dem: npt.NDArray, spacing: float, angle: float
+) -> tuple[npt.NDArray, float]:
     """Skew and transpose the dem for the given angle.
     Also calculate the new spacing given the skew.
 
@@ -27,8 +28,8 @@ def skew_transpose(
 
 
 def transpose_skew(
-    dem: np.ndarray, spacing: float, angle: float
-) -> tuple[np.ndarray, float]:
+    dem: npt.NDArray, spacing: float, angle: float
+) -> tuple[npt.NDArray, float]:
     """Transpose, skew then transpose a dem for the
     given angle. Also calculate the new spacing
 
@@ -48,7 +49,7 @@ def transpose_skew(
     return t, spacing
 
 
-def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
+def horizon(azimuth: float, dem: npt.NDArray, spacing: float) -> npt.NDArray:
     """
     Calculate horizon angles for one direction. Horizon angles
     are based on Dozier and Frew 1990 and are adapted from the
@@ -133,7 +134,7 @@ def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
     return horizon_angles_cos
 
 
-def hor2d_c(elevations: np.ndarray, spacing: float, fwd=True) -> np.ndarray:
+def hor2d_c(elevations: npt.NDArray, spacing: float, fwd: bool = True) -> npt.NDArray:
     """
     Calculate values of cosines of angles to horizons in 2 dimension,
     measured from zenith, from elevation difference and distance.  Let
@@ -172,7 +173,7 @@ def hor2d_c(elevations: np.ndarray, spacing: float, fwd=True) -> np.ndarray:
     return h
 
 
-def pyhorizon(dem: np.ndarray, dx: float) -> tuple[np.ndarray, int]:
+def pyhorizon(dem: npt.NDArray, dx: float) -> tuple[npt.NDArray, int]:
     """Pure python version of the horizon function.
 
     NOTE: this is fast for small dem's but quite slow
@@ -184,7 +185,7 @@ def pyhorizon(dem: np.ndarray, dx: float) -> tuple[np.ndarray, int]:
     horizon at an angle.
 
     Args:
-        dem (np.ndarray): dem for the horizon
+        dem (npt.NDArray): dem for the horizon
         dx (float): spacing for the dem
 
     Returns:

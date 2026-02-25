@@ -1,12 +1,13 @@
 import numpy as np
+import numpy.typing as npt
 
 from topocalc.gradient import gradient_d8
 from topocalc.horizon import horizon
 
 
 def viewf(
-    dem: np.ndarray, spacing: float, nangles: int = 72
-) -> tuple[np.ndarray, np.ndarray]:
+    dem: npt.NDArray, spacing: float, nangles: int = 72
+) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Calculate the sky view factor of a dem.
 

@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 
 
 def adjust_spacing(spacing: float, skew_angle: float) -> float:
@@ -16,8 +17,8 @@ def adjust_spacing(spacing: float, skew_angle: float) -> float:
 
 
 def skew(
-    arr: np.ndarray, angle: float, fwd: str = True, fill_min: bool = True
-) -> np.ndarray:
+    arr: npt.NDArray, angle: float, fwd: bool = True, fill_min: bool = True
+) -> npt.NDArray:
     """
     Skew the origin of successive lines by a specified angle
     A skew with angle of 30 degrees causes the following transformation:
