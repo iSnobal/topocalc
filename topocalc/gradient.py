@@ -1,7 +1,10 @@
 import numpy as np
+import numpy.typing as npt
 
 
-def gradient_d4(dem, dx, dy, aspect_rad=False):
+def gradient_d4(
+    dem: npt.NDArray, dx: float, dy: float, aspect_rad: bool = False
+) -> tuple[npt.NDArray, npt.NDArray]:
     """Calculate the slope and aspect for provided dem,
     this will mimic the original IPW gradient method that
     does a finite difference in the x/y direction.
@@ -36,7 +39,7 @@ def gradient_d4(dem, dx, dy, aspect_rad=False):
     """
 
     # Pad the dem
-    dem_pad = np.pad(dem, pad_width=1, mode='edge')
+    dem_pad = np.pad(dem, pad_width=1, mode="edge")
 
     # top
     dem_pad[0, :] = dem_pad[1, :] + (dem_pad[1, :] - dem_pad[2, :])
@@ -65,7 +68,9 @@ def gradient_d4(dem, dx, dy, aspect_rad=False):
     return slope, a
 
 
-def gradient_d8(dem, dx, dy, aspect_rad=False):
+def gradient_d8(
+    dem: npt.NDArray, dx: float, dy: float, aspect_rad: bool = False
+) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Calculate the slope and aspect for provided dem,
     using a 3x3 cell around the center
@@ -100,7 +105,7 @@ def gradient_d8(dem, dx, dy, aspect_rad=False):
     """
 
     # Pad the dem
-    dem_pad = np.pad(dem, pad_width=1, mode='edge')
+    dem_pad = np.pad(dem, pad_width=1, mode="edge")
 
     # top
     dem_pad[0, :] = dem_pad[1, :] + (dem_pad[1, :] - dem_pad[2, :])
@@ -115,14 +120,16 @@ def gradient_d8(dem, dx, dy, aspect_rad=False):
     dem_pad[:, -1] = dem_pad[:, -2] - (dem_pad[:, -3] - dem_pad[:, -2])
 
     # finite difference in the y direction
-    dz_dy = ((dem_pad[2:, :-2] + 2*dem_pad[2:, 1:-1] + dem_pad[2:, 2:]) -
-             (dem_pad[:-2, :-2] + 2*dem_pad[:-2, 1:-1] +
-              dem_pad[:-2, 2:])) / (8 * dy)
+    dz_dy = (
+        (dem_pad[2:, :-2] + 2 * dem_pad[2:, 1:-1] + dem_pad[2:, 2:])
+        - (dem_pad[:-2, :-2] + 2 * dem_pad[:-2, 1:-1] + dem_pad[:-2, 2:])
+    ) / (8 * dy)
 
     # finite difference in the x direction
-    dz_dx = ((dem_pad[:-2, 2:] + 2*dem_pad[1:-1, 2:] + dem_pad[2:, 2:]) -
-             (dem_pad[:-2, :-2] + 2*dem_pad[1:-1, :-2] +
-              dem_pad[2:, :-2])) / (8 * dx)
+    dz_dx = (
+        (dem_pad[:-2, 2:] + 2 * dem_pad[1:-1, 2:] + dem_pad[2:, 2:])
+        - (dem_pad[:-2, :-2] + 2 * dem_pad[1:-1, :-2] + dem_pad[2:, :-2])
+    ) / (8 * dx)
 
     slope = calc_slope(dz_dx, dz_dy)
     a = aspect(dz_dx, dz_dy)
@@ -133,7 +140,7 @@ def gradient_d8(dem, dx, dy, aspect_rad=False):
     return slope, a
 
 
-def calc_slope(dz_dx, dz_dy):
+def calc_slope(dz_dx: npt.NDArray, dz_dy: npt.NDArray) -> npt.NDArray:
     """Calculate the slope given the finite differences
 
     Arguments:
@@ -147,7 +154,7 @@ def calc_slope(dz_dx, dz_dy):
     return np.arctan(np.sqrt(dz_dx**2 + dz_dy**2))
 
 
-def aspect(dz_dx, dz_dy):
+def aspect(dz_dx: npt.NDArray, dz_dy: npt.NDArray) -> npt.NDArray:
     """
     Calculate the aspect from the finite difference.
     Aspect is degrees clockwise from North (0/360 degrees)
@@ -179,7 +186,7 @@ def aspect(dz_dx, dz_dy):
     return aout
 
 
-def aspect_to_ipw_radians(a):
+def aspect_to_ipw_radians(a: npt.NDArray) -> npt.NDArray:
     """
     IPW defines aspect differently than most GIS programs
     so convert an aspect in degrees from due North (0/360)

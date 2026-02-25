@@ -1,10 +1,13 @@
 import numpy as np
+import numpy.typing as npt
 
 from topocalc import topo_core
 from topocalc.skew import adjust_spacing, skew
 
 
-def skew_transpose(dem, spacing, angle):
+def skew_transpose(
+    dem: npt.NDArray, spacing: float, angle: float
+) -> tuple[npt.NDArray, float]:
     """Skew and transpose the dem for the given angle.
     Also calculate the new spacing given the skew.
 
@@ -24,7 +27,9 @@ def skew_transpose(dem, spacing, angle):
     return t, spacing
 
 
-def transpose_skew(dem, spacing, angle):
+def transpose_skew(
+    dem: npt.NDArray, spacing: float, angle: float
+) -> tuple[npt.NDArray, float]:
     """Transpose, skew then transpose a dem for the
     given angle. Also calculate the new spacing
 
@@ -44,7 +49,7 @@ def transpose_skew(dem, spacing, angle):
     return t, spacing
 
 
-def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
+def horizon(azimuth: float, dem: npt.NDArray, spacing: float) -> npt.NDArray:
     """
     Calculate horizon angles for one direction. Horizon angles
     are based on Dozier and Frew 1990 and are adapted from the
@@ -66,10 +71,10 @@ def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
     horizon_angles_cos = np.zeros_like(dem)
 
     if dem.ndim != 2:
-        raise ValueError('horizon input of dem is not a 2D array')
+        raise ValueError("horizon input of dem is not a 2D array")
 
     if azimuth > 180 or azimuth < -180:
-        raise ValueError('azimuth must be between -180 and 180 degrees')
+        raise ValueError("azimuth must be between -180 and 180 degrees")
 
     if azimuth == 90:
         # East
@@ -124,12 +129,12 @@ def horizon(azimuth: float, dem: np.ndarray, spacing: float) -> np.ndarray:
         horizon_angles_cos = skew(h.transpose(), a, fwd=False).transpose()
 
     else:
-        ValueError('azimuth not valid')
+        ValueError("azimuth not valid")
 
     return horizon_angles_cos
 
 
-def hor2d_c(elevations: np.ndarray, spacing: float, fwd=True) -> np.ndarray:
+def hor2d_c(elevations: npt.NDArray, spacing: float, fwd: bool = True) -> npt.NDArray:
     """
     Calculate values of cosines of angles to horizons in 2 dimension,
     measured from zenith, from elevation difference and distance.  Let
@@ -168,7 +173,7 @@ def hor2d_c(elevations: np.ndarray, spacing: float, fwd=True) -> np.ndarray:
     return h
 
 
-def pyhorizon(dem, dx):
+def pyhorizon(dem: npt.NDArray, dx: float) -> tuple[npt.NDArray, int]:
     """Pure python version of the horizon function.
 
     NOTE: this is fast for small dem's but quite slow
@@ -180,7 +185,7 @@ def pyhorizon(dem, dx):
     horizon at an angle.
 
     Args:
-        dem (np.ndarray): dem for the horizon
+        dem (npt.NDArray): dem for the horizon
         dx (float): spacing for the dem
 
     Returns:
@@ -214,14 +219,15 @@ def pyhorizon(dem, dx):
 
         # horizon location
         hor = np.nanargmax(slope[:, :-1], axis=0)
-        hor = np.append(hor, ncols-1)
+        hor = np.append(hor, ncols - 1)
         hidx = hor.astype(int)
 
         horizon_height_diff = surface[hidx] - surface
         horizon_distance_diff = dx * (hor - col_index)
 
-        new_horizon = horizon_height_diff / \
-            np.sqrt(horizon_height_diff**2 + horizon_distance_diff**2)
+        new_horizon = horizon_height_diff / np.sqrt(
+            horizon_height_diff**2 + horizon_distance_diff**2
+        )
 
         new_horizon[new_horizon < 0] = 0
         new_horizon[np.isnan(new_horizon)] = 0

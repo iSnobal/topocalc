@@ -1,7 +1,8 @@
 import numpy as np
+import numpy.typing as npt
 
 
-def adjust_spacing(spacing, skew_angle):
+def adjust_spacing(spacing: float, skew_angle: float) -> float:
     """Adjust the grid spacing if a skew angle is present
 
     Arguments:
@@ -15,7 +16,9 @@ def adjust_spacing(spacing, skew_angle):
     return spacing / np.cos(skew_angle * np.arctan(1.0) / 45)
 
 
-def skew(arr, angle, fwd=True, fill_min=True):
+def skew(
+    arr: npt.NDArray, angle: float, fwd: bool = True, fill_min: bool = True
+) -> npt.NDArray:
     """
     Skew the origin of successive lines by a specified angle
     A skew with angle of 30 degrees causes the following transformation:
