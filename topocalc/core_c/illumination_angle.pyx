@@ -1,9 +1,3 @@
-# cython: language_level=3
-# cython: boundscheck=False
-# cython: wraparound=False
-# cython: cdivision=True
-# distutils: language = c
-
 import numpy as np
 cimport numpy as np
 from libc.math cimport cos, sin, sqrt, pi, acos

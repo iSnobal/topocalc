@@ -4,10 +4,33 @@ from pathlib import Path
 
 import numpy
 from setuptools import Extension, setup
-from Cython.Distutils import build_ext
+from Cython.Build import cythonize
 
-# Allow user to specify a compiler; default to gcc if not provided
-os.environ.setdefault("CC", "gcc")
+# Give user option to specify local compiler name
+if "CC" not in os.environ:
+    os.environ["CC"] = "gcc"
+
+print("Compiler set to: " + os.environ["CC"])
+
+extension_params = dict(
+    extra_compile_args=[
+        '-fopenmp',
+        '-O3',
+    ],
+    extra_link_args=['-fopenmp'],
+    include_dirs=[numpy.get_include()]
+)
+
+directives = {
+    'language_level': "3str",
+    'embedsignature': True,
+    'boundscheck': False,
+    'wraparound': False,
+    'initializedcheck': False,
+    'cdivision': True,
+    'binding': True,
+}
+
 
 source_location = Path("topocalc") / "core_c"
 
@@ -15,18 +38,18 @@ extensions = [
     Extension(
         "topocalc.topo_core",
         sources=[
-            str(source_location / "illumination_angle.pyx"),
             str(source_location / "topo_core.pyx"),
             str(source_location / "hor1d.c"),
         ],
-        include_dirs=[numpy.get_include()],
-        extra_compile_args=["-fopenmp", "-O3"],
-        extra_link_args=["-fopenmp", "-O3"],
+        **extension_params
     )
 ]
 
 setup(
     name="topocalc",
-    cmdclass={"build_ext": build_ext},
-    ext_modules = extensions
+    ext_modules=cythonize(
+        extensions,
+        compiler_directives=directives,
+        annotate=False,
+    ),
 )
