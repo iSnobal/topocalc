@@ -4,7 +4,9 @@ from topocalc.gradient import gradient_d8
 from topocalc.horizon import horizon
 
 
-def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
+def viewf(
+    dem: np.ndarray, spacing: float, nangles: int = 72
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Calculate the sky view factor of a dem.
 
@@ -24,17 +26,15 @@ def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
     replication of the IPW command `viewf` minus rounding errors
     from type and linear quantization.
 
+    The horizon term, H, in equation above is updated to account for
+    with-in pixel topography as demonstrated by Dozier (2021).
+    See equation 2 in https://doi.org/10.1109/LGRS.2021.3125278
+
     Args:
         dem: numpy array for the DEM
         spacing: grid spacing of the DEM
         nangles: number of angles to estimate the horizon, defaults
                 to 72 angles
-        sin_slope: optional, will calculate if not provided
-                    sin(slope) with range from 0 to 1
-        aspect: optional, will calculate if not provided
-                Aspect as radians from south (aspect 0 is toward
-                the south) with range from -pi to pi, with negative
-                values to the west and positive values to the east.
 
     Returns:
         svf: sky view factor
@@ -70,7 +70,7 @@ def viewf(dem, spacing, nangles=72, sin_slope=None, aspect=None):
         # cosines of difference between horizon aspect and slope aspect
         cos_aspect = np.cos(azimuth - aspect)
 
-        # update horizon for within-pixel topography (Dozier 2022)
+        # update horizon for within-pixel topography (equation 2 in Dozier 2021)
         t = cos_aspect < 0
         h[t] = np.minimum(
             h[t],
