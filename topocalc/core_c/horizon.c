@@ -137,19 +137,32 @@ void horizon_2d(
     {
         int *hbuf = (int *)malloc(ncols * sizeof(int));
 
-        #pragma omp for schedule(dynamic)
-        for (int i = 0; i < nrows; i++)
+        if (hbuf == NULL)
         {
-            double *z_row = &z[i * ncols];
-            double *hcos_row = &hcos[i * ncols];
-
-            // Calculate horizon indices for this row
-            horizon_1d(ncols, z_row, hbuf, forward);
-
-            // Compute cosine values directly into the output array
-            horizon_cos(ncols, z_row, delta, hbuf, hcos_row);
+            /* Report allocation failure once per thread; skip processing in this thread. */
+            #pragma omp critical
+            {
+                fprintf(stderr,
+                        "horizon_2d: failed to allocate horizon buffer for %d columns\n",
+                        ncols);
+            }
         }
+        else
+        {
+            #pragma omp for schedule(dynamic)
+            for (int i = 0; i < nrows; i++)
+            {
+                double *z_row = &z[i * ncols];
+                double *hcos_row = &hcos[i * ncols];
 
-        free(hbuf);
+                // Calculate horizon indices for this row
+                horizon_1d(ncols, z_row, hbuf, forward);
+
+                // Compute cosine values directly into the output array
+                horizon_cos(ncols, z_row, delta, hbuf, hcos_row);
+            }
+
+            free(hbuf);
+        }
     }
 }
