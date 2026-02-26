@@ -43,9 +43,9 @@ def c_horizon_2d(double[:, ::1] z, double spacing, bint forward, double[:, ::1] 
     Compute horizon value for a 2D array of elevations.
 
     Args:
-        z (ndarray): A 1D elevation data array.
+        z (ndarray): A 2D elevation data array.
         spacing (float): The spacing value between grid points.
         forward (bool): A boolean flag indicating the direction of computation.
-        hcos (ndarray): A 1D array result array to use
+        hcos (ndarray): A 2D array result array to store the cosine values.
     """
     horizon_2d(z.shape[0], z.shape[1], &z[0, 0], spacing, forward, &hcos[0, 0])
