@@ -27,7 +27,7 @@ int horizon_1d(
      * Main loop. Parallelized only if not already inside a parallel region
      * (e.g., when called for a single row).
      */
-    #pragma omp parallel for schedule(static) if(!omp_in_parallel())
+    #pragma omp parallel for schedule(static) private(k) if(!omp_in_parallel())
     for (i = 0; i < n; i++) {
         // Skip boundary point based on direction
         if (forward && i == n - 1) continue;
