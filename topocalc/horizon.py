@@ -5,46 +5,28 @@ from topocalc import topo_core
 from topocalc.skew import adjust_spacing, skew
 
 
-def skew_transpose(
-    dem: npt.NDArray, spacing: float, angle: float
+def skew_dem(
+    dem: npt.NDArray, spacing: float, angle: float, transpose_input: bool = False
 ) -> tuple[npt.NDArray, float]:
-    """Skew and transpose the dem for the given angle.
+    """
+    Skew and transpose the dem for the given angle.
     Also calculate the new spacing given the skew.
 
     Arguments:
-        dem {array} -- numpy array of dem elevations
-        spacing {float} -- grid spacing
-        angle {float} -- skew angle
+        dem:              DEM elevations
+        spacing:          DEM grid spacing
+        angle:            Skew angle
+        transpose_input:  Whether to transpose before skewing
 
-    Returns:
-        t -- skew and transpose array
-        spacing -- new spacing adjusted for angle
+    Returns: (Tuple)
+        - skew and transpose array
+        - new spacing adjusted for angle
     """
+    if transpose_input:
+        dem = dem.transpose()
 
     spacing = adjust_spacing(spacing, np.abs(angle))
     t = skew(dem, angle, fill_min=True).transpose()
-
-    return t, spacing
-
-
-def transpose_skew(
-    dem: npt.NDArray, spacing: float, angle: float
-) -> tuple[npt.NDArray, float]:
-    """Transpose, skew then transpose a dem for the
-    given angle. Also calculate the new spacing
-
-    Arguments:
-        dem {array} -- numpy array of dem elevations
-        spacing {float} -- grid spacing
-        angle {float} -- skew angle
-
-    Returns:
-        t -- skew and transpose array
-        spacing -- new spacing adjusted for angle
-    """
-
-    t = skew(dem.transpose(), angle, fill_min=True).transpose()
-    spacing = adjust_spacing(spacing, np.abs(angle))
 
     return t, spacing
 
@@ -61,116 +43,95 @@ def horizon(azimuth: float, dem: npt.NDArray, spacing: float) -> npt.NDArray:
     range.
 
     Arguments:
-        azimuth {float} -- find horizon's along this direction
-        dem {np.array2d} -- numpy array of dem elevations
-        spacing {float} -- grid spacing
+        azimuth:  Angle to find horizon's along this direction
+        dem:      DEM elevations
+        spacing:  DEM grid spacing
 
     Returns:
-        horizon_angles_cos {np.array} -- cosines of angles to the horizon
+        Cosines of angles to the horizon
     """
-    horizon_angles_cos = np.zeros_like(dem)
-
     if dem.ndim != 2:
         raise ValueError("horizon input of dem is not a 2D array")
 
     if azimuth > 180 or azimuth < -180:
         raise ValueError("azimuth must be between -180 and 180 degrees")
 
-    if azimuth == 90:
-        # East
-        horizon_angles_cos = hor2d_c(dem, spacing, fwd=True)
+    # Initial state for parameters
+    is_forward = True
+    transpose_output = False
+    is_skewed = False
+    skew_angle = 0.0
 
-    elif azimuth == -90:
-        # West
-        horizon_angles_cos = hor2d_c(dem, spacing, fwd=False)
-
-    elif azimuth == 0:
-        # South
-        horizon_angles_cos = hor2d_c(dem.transpose(), spacing, fwd=True)
-        horizon_angles_cos = horizon_angles_cos.transpose()
-
-    elif np.abs(azimuth) == 180:
-        # South
-        horizon_angles_cos = hor2d_c(dem.transpose(), spacing, fwd=False)
-        horizon_angles_cos = horizon_angles_cos.transpose()
-
-    elif azimuth >= -45 and azimuth <= 45:
+    # Determine transformation parameters
+    if azimuth == 90:  # East
+        skewed_dem = dem
+        adjusted_spacing = spacing
+        is_forward = True
+    elif azimuth == -90:  # West
+        skewed_dem = dem
+        adjusted_spacing = spacing
+        is_forward = False
+    elif azimuth == 0:  # South
+        skewed_dem = dem.transpose()
+        adjusted_spacing = spacing
+        is_forward = True
+        transpose_output = True
+    elif np.abs(azimuth) == 180:  # North
+        skewed_dem = dem.transpose()
+        adjusted_spacing = spacing
+        is_forward = False
+        transpose_output = True
+    elif -45 <= azimuth <= 45:
         # South west through south east
-        t, spacing = skew_transpose(dem, spacing, azimuth)
-        h = hor2d_c(t, spacing, fwd=True)
-        horizon_angles_cos = skew(h.transpose(), azimuth, fwd=False)
-
-    elif azimuth <= -135 and azimuth > -180:
-        # North west
-        a = azimuth + 180
-        t, spacing = skew_transpose(dem, spacing, a)
-        h = hor2d_c(t, spacing, fwd=False)
-        horizon_angles_cos = skew(h.transpose(), a, fwd=False)
-
-    elif azimuth >= 135 and azimuth < 180:
-        # North East
-        a = azimuth - 180
-        t, spacing = skew_transpose(dem, spacing, a)
-        h = hor2d_c(t, spacing, fwd=False)
-        horizon_angles_cos = skew(h.transpose(), a, fwd=False)
-
-    elif azimuth > 45 and azimuth < 135:
+        is_skewed = True
+        skew_angle = azimuth
+        is_forward = True
+        skewed_dem, adjusted_spacing = skew_dem(dem, spacing, skew_angle)
+    elif azimuth <= -135 or azimuth >= 135:
+        # North west and North east
+        is_skewed = True
+        skew_angle = azimuth + 180 if azimuth < 0 else azimuth - 180
+        is_forward = False
+        skewed_dem, adjusted_spacing = skew_dem(dem, spacing, skew_angle)
+    elif 45 < azimuth < 135:
         # South east through north east
-        a = 90 - azimuth
-        t, spacing = transpose_skew(dem, spacing, a)
-        h = hor2d_c(t, spacing, fwd=True)
-        horizon_angles_cos = skew(h.transpose(), a, fwd=False).transpose()
-
-    elif azimuth < -45 and azimuth > -135:
+        is_skewed = True
+        transpose_output = True
+        skew_angle = 90 - azimuth
+        is_forward = True
+        skewed_dem, adjusted_spacing = skew_dem(
+            dem, spacing, skew_angle, transpose_input=True
+        )
+    elif -135 < azimuth < -45:
         # South west through north west
-        a = -90 - azimuth
-        t, spacing = transpose_skew(dem, spacing, a)
-        h = hor2d_c(t, spacing, fwd=False)
-        horizon_angles_cos = skew(h.transpose(), a, fwd=False).transpose()
-
+        is_skewed = True
+        transpose_output = True
+        skew_angle = -90 - azimuth
+        is_forward = False
+        skewed_dem, adjusted_spacing = skew_dem(
+            dem, spacing, skew_angle, transpose_input=True
+        )
     else:
-        ValueError("azimuth not valid")
+        raise ValueError("azimuth not valid")
 
-    return horizon_angles_cos
+    # Ensure memory is contiguous and type is double for the C extension.
+    elevations = np.require(skewed_dem, dtype=np.double, requirements=['C', 'A'])
+    horizon_cos = np.zeros_like(elevations)
 
+    topo_core.c_hor2d(
+        elevations,
+        np.double(adjusted_spacing),
+        is_forward,
+        horizon_cos
+    )
 
-def hor2d_c(elevations: npt.NDArray, spacing: float, fwd: bool = True) -> npt.NDArray:
-    """
-    Calculate values of cosines of angles to horizons in 2 dimension,
-    measured from zenith, from elevation difference and distance.  Let
-    G be the horizon angle from horizontal and note that:
+    if is_skewed:
+        horizon_cos = skew(horizon_cos.transpose(), skew_angle, fwd=False)
 
-        sin G = z / sqrt( z^2 + dis^2);
+    if transpose_output:
+        horizon_cos = horizon_cos.transpose()
 
-    This result is the same as cos H, where H measured from zenith.
-
-    Args:
-        elevations: elevation array
-        spacing: spacing of array
-        fwd: Direction to check for horizon
-
-    Returns:
-        hcos: cosines of angles to horizon
-    """
-
-    if elevations.ndim != 2:
-        raise ValueError("Input array of z is not a 2D array")
-
-    if elevations.dtype != np.double:
-        raise ValueError("Input array of z must be of type double")
-
-    spacing = np.double(spacing)
-
-    elevations = np.ascontiguousarray(elevations)
-
-    h = np.zeros_like(elevations)
-
-    topo_core.c_hor2d(elevations, spacing, fwd, h)
-
-    # if not fwd:
-    #     h = np.fliplr(h)
-
-    return h
+    return horizon_cos
 
 
 def pyhorizon(dem: npt.NDArray, dx: float) -> tuple[npt.NDArray, int]:
@@ -226,7 +187,7 @@ def pyhorizon(dem: npt.NDArray, dx: float) -> tuple[npt.NDArray, int]:
         horizon_distance_diff = dx * (hor - col_index)
 
         new_horizon = horizon_height_diff / np.sqrt(
-            horizon_height_diff**2 + horizon_distance_diff**2
+            horizon_height_diff ** 2 + horizon_distance_diff ** 2
         )
 
         new_horizon[new_horizon < 0] = 0
