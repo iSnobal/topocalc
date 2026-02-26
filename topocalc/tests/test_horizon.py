@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 import numpy as np
-from topocalc.horizon import hor2d_c, horizon
+from topocalc.horizon import horizon
 
 
 class TestHorizon(unittest.TestCase):
@@ -18,20 +18,6 @@ class TestHorizon(unittest.TestCase):
         self.assertIn(
             "azimuth must be between -180 and 180 degrees", str(context.exception)
         )
-
-    def test_hor2dc_errors(self):
-        dem = np.ones((10))
-        with self.assertRaises(ValueError) as context:
-            hor2d_c(dem, 1)
-        self.assertIn("z is not a 2D array", str(context.exception))
-
-    def test_hor2dc_type_errors(self):
-        dem = np.float32(np.ones((10, 1)))
-
-        with self.assertRaises(ValueError) as context:
-            hor2d_c(dem, 1)
-
-        self.assertIn("z must be of type double", str(context.exception))
 
 
 class TestHorizonGold(unittest.TestCase):
