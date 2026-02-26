@@ -12,12 +12,12 @@ include "illumination_angle.pyx"
 # Initialize NumPy API
 np.import_array()
 
-cdef extern from "topo_core.h":
-    int hor1d(int n, double *z, int *h, bint forward)
-    void horval(int n, double *z, double delta, int *h, double *hcos)
-    void hor2d(int nrows, int ncols, double *z, double delta, bint forward, double *hcos)
+cdef extern from "horizon.c":
+    int horizon_1d(int n, double *z, int *h, bint forward)
+    void horizon_cos(int n, double *z, double delta, int *h, double *hcos)
+    void horizon_2d(int nrows, int ncols, double *z, double delta, bint forward, double *hcos)
 
-def c_hor1d(double[::1] z, double spacing, bint forward, double[::1] hcos):
+def c_horizon_1d(double[::1] z, double spacing, bint forward, double[::1] hcos):
     """
     Computes 1D horizon indices and converts them into cosine values.
 
@@ -33,12 +33,12 @@ def c_hor1d(double[::1] z, double spacing, bint forward, double[::1] hcos):
     cdef int[::1] h = np.empty(n, dtype=np.intc)
 
     # Compute horizon indices
-    hor1d(n, &z[0], &h[0], forward)
+    horizon_1d(n, &z[0], &h[0], forward)
 
     # Convert indices to cosine values
-    horval(n, &z[0], spacing, &h[0], &hcos[0])
+    horizon_cos(n, &z[0], spacing, &h[0], &hcos[0])
 
-def c_hor2d(double[:, ::1] z, double spacing, bint forward, double[:, ::1] hcos):
+def c_horizon_2d(double[:, ::1] z, double spacing, bint forward, double[:, ::1] hcos):
     """
     Compute horizon value for a 2D array of elevations.
 
@@ -48,4 +48,4 @@ def c_hor2d(double[:, ::1] z, double spacing, bint forward, double[:, ::1] hcos)
         forward (bool): A boolean flag indicating the direction of computation.
         hcos (ndarray): A 1D array result array to use
     """
-    hor2d(z.shape[0], z.shape[1], &z[0, 0], spacing, forward, &hcos[0, 0])
+    horizon_2d(z.shape[0], z.shape[1], &z[0, 0], spacing, forward, &hcos[0, 0])

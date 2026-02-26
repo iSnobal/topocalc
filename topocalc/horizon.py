@@ -118,7 +118,7 @@ def horizon(azimuth: float, dem: npt.NDArray, spacing: float) -> npt.NDArray:
     elevations = np.require(skewed_dem, dtype=np.double, requirements=['C', 'A'])
     horizon_cos = np.zeros_like(elevations)
 
-    topo_core.c_hor2d(
+    topo_core.c_horizon_2d(
         elevations,
         np.double(adjusted_spacing),
         is_forward,

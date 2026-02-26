@@ -1,22 +1,18 @@
-/*
- * horizon in forward direction for equi-spaced elevation vector
- */
-
 #include <math.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <omp.h>
-#include "topo_core.h"
 
 /*
  * 1D horizon function (forward or backward direction)
  */
-int hor1d(
+int horizon_1d(
     int n,         /* length of vectors z and h */
     double *z,     /* elevation function */
     int *h,        /* horizon function (return) */
-    bool forward)  /* direction: true for forward, false for backward */
+    bool forward   /* direction: true for forward, false for backward */
+)
 {
     int i, k;
 
@@ -69,41 +65,6 @@ int hor1d(
     return 0;
 }
 
-/*
- * Optimized 2D horizon function
- */
-void hor2d(
-    int nrows,    /* rows of elevations array */
-    int ncols,    /* columns of elevations array */
-    double *z,    /* elevations */
-    double delta, /* spacing */
-    bool forward, /* forward direction flag */
-    double *hcos) /* cosines of angles to horizon */
-{
-    /*
-     * Parallelize over rows. Each thread gets its own small horizon buffer
-     * to avoid memory allocation inside the loop and eliminate redundant copies.
-     */
-    #pragma omp parallel
-    {
-        int *hbuf = (int *)malloc(ncols * sizeof(int));
-
-        #pragma omp for schedule(dynamic)
-        for (int i = 0; i < nrows; i++)
-        {
-            double *z_row = &z[i * ncols];
-            double *hcos_row = &hcos[i * ncols];
-
-            // Calculate horizon indices for this row
-            hor1d(ncols, z_row, hbuf, forward);
-
-            // Compute cosine values directly into the output array
-            horval(ncols, z_row, delta, hbuf, hcos_row);
-        }
-
-        free(hbuf);
-    }
-}
 
 /*
 **	Calculate values of cosines of angles to horizons, measured
@@ -112,13 +73,13 @@ void hor2d(
 **
 **		cos H = z / sqrt( z^2 + dis^2);
 */
-
-void horval(
+void horizon_cos(
     int n,        /* length of horizon vector */
     double *z,    /* elevations */
     double delta, /* spacing */
     int *h,       /* horizon function */
-    double *hcos) /* cosines of angles to horizon */
+    double *hcos  /* cosines of angles to horizon */
+)
 {
     int i;
     const double delta_sq = delta * delta;
@@ -152,5 +113,43 @@ void horval(
          * cos H = z / sqrt( z^2 + dist^2 )
          */
         hcos[i] = diff / sqrt(diff * diff + dist_sq);
+    }
+}
+
+
+/*
+ * Optimized 2D horizon function
+ */
+void horizon_2d(
+    int nrows,    /* rows of elevations array */
+    int ncols,    /* columns of elevations array */
+    double *z,    /* elevations */
+    double delta, /* spacing */
+    bool forward, /* forward direction flag */
+    double *hcos  /* cosines of angles to horizon */
+)
+{
+    /*
+     * Parallelize over rows. Each thread gets its own small horizon buffer
+     * to avoid memory allocation inside the loop and eliminate redundant copies.
+     */
+    #pragma omp parallel
+    {
+        int *hbuf = (int *)malloc(ncols * sizeof(int));
+
+        #pragma omp for schedule(dynamic)
+        for (int i = 0; i < nrows; i++)
+        {
+            double *z_row = &z[i * ncols];
+            double *hcos_row = &hcos[i * ncols];
+
+            // Calculate horizon indices for this row
+            horizon_1d(ncols, z_row, hbuf, forward);
+
+            // Compute cosine values directly into the output array
+            horizon_cos(ncols, z_row, delta, hbuf, hcos_row);
+        }
+
+        free(hbuf);
     }
 }

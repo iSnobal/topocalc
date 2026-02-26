@@ -4,6 +4,7 @@ topocalc/version.py
 # Ignore generated files
 # https://cython.readthedocs.io/en/stable/src/userguide/source_files_and_compilation.html#distributing-cython-modules
 topocalc/core_c/*.c
+!topocalc/core_c/horizon.c
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
