@@ -39,7 +39,6 @@ extensions = [
         "topocalc.topo_core",
         sources=[
             str(source_location / "topo_core.pyx"),
-            str(source_location / "hor1d.c"),
         ],
         **extension_params
     )

@@ -4,81 +4,48 @@ C implementation of some radiation functions
 # distutils: language = c
 # distutils: define_macros=NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 
-import cython
 import numpy as np
 cimport numpy as np
 
 include "illumination_angle.pyx"
 
-# Numpy must be initialized. When using numpy from C or Cython you must
-# _always_ do that, or you will have segfaults
+# Initialize NumPy API
 np.import_array()
 
-cdef extern from "topo_core.h":
-    void hor1f(int n, double *z, int *h)
-    void hor1b(int n, double *z, int *h)
-    void horval(int n, double *z, double delta, int *h, double *hcos)
-    void hor2d(int n, int m, double *z, double delta, bint forward, double *hcos)
+cdef extern from "horizon.c":
+    int horizon_1d(int n, double *z, int *h, bint forward)
+    void horizon_cos(int n, double *z, double delta, int *h, double *hcos)
+    void horizon_2d(int nrows, int ncols, double *z, double delta, bint forward, double *hcos)
 
-def c_hor1d(
-    np.ndarray[double, ndim=1, mode="c"] z not None,
-    double spacing,
-    bint forward,
-    np.ndarray[double, ndim=1, mode="c"] hcos not None
-):
+def c_horizon_1d(double[::1] z, double spacing, bint forward, double[::1] hcos):
     """
-    Call the function hor1f in hor1f.c
+    Computes 1D horizon indices and converts them into cosine values.
 
     Args:
-        z: elevation array
-        spacing: grid spacing
-        forward: whether to process forward or backward
-        hcos: cosine angle of horizon array (output)
-
-    Returns
-        hcos: cosine angle of horizon array changed in place
+        z (ndarray): A 1D elevation data array.
+        spacing (float): The spacing value between grid points.
+        forward (bool): A boolean flag indicating the direction of computation.
+        hcos (ndarray): A 1D array result array to use
     """
-    cdef:
-        int n = z.shape[0]
-        np.ndarray[double, ndim=1, mode="c"] z_arr
-        np.ndarray[int, ndim=1, mode="c"] h
+    cdef int n = z.shape[0]
 
-    # Ensure consistent memory layout
-    z_arr = np.ascontiguousarray(z, dtype=np.float64)
+    # Integer buffer for indices
+    cdef int[::1] h = np.empty(n, dtype=np.intc)
 
-    # Integer array for horizon index
-    h = np.empty(n, dtype=np.int32)
+    # Compute horizon indices
+    horizon_1d(n, &z[0], &h[0], forward)
 
-    # Call the appropriate C function based on direction
-    if forward:
-        hor1f(n, &z_arr[0], &h[0])
-    else:
-        hor1b(n, &z_arr[0], &h[0])
+    # Convert indices to cosine values
+    horizon_cos(n, &z[0], spacing, &h[0], &hcos[0])
 
-    # Calculate horizon values
-    horval(n, &z_arr[0], spacing, &h[0], &hcos[0])
-
-def c_hor2d(
-    np.ndarray[double, ndim=2, mode="c"] z not None,
-    double spacing,
-    bint forward,
-    np.ndarray[double, ndim=2, mode="c"] hcos not None
-):
+def c_horizon_2d(double[:, ::1] z, double spacing, bint forward, double[:, ::1] hcos):
     """
-    Call the function hor2d in topo_core.c
+    Compute horizon value for a 2D array of elevations.
 
     Args:
-        z: elevation array
-        spacing: grid spacing
-        forward: whether to process forward or backward
-        hcos: cosine angle of horizon array (output)
-
-    Returns
-        hcos: cosine angle of horizon array changed in place
+        z (ndarray): A 2D elevation data array.
+        spacing (float): The spacing value between grid points.
+        forward (bool): A boolean flag indicating the direction of computation.
+        hcos (ndarray): A 2D array result array to store the cosine values.
     """
-    cdef:
-        int nrows = z.shape[0]
-        int ncols = z.shape[1]
-
-    # Call the hor2d C function
-    hor2d(nrows, ncols, &z[0,0], spacing, forward, &hcos[0,0])
+    horizon_2d(z.shape[0], z.shape[1], &z[0, 0], spacing, forward, &hcos[0, 0])
