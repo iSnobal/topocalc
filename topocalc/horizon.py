@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.typing as npt
+from scipy.ndimage import median_filter
 
 from topocalc import topo_core
 from topocalc.skew import adjust_spacing, skew
@@ -115,18 +116,19 @@ def horizon(azimuth: float, dem: npt.NDArray, spacing: float) -> npt.NDArray:
         raise ValueError("azimuth not valid")
 
     # Ensure memory is contiguous and type is double for the C extension.
-    elevations = np.require(skewed_dem, dtype=np.double, requirements=['C', 'A'])
+    elevations = np.require(skewed_dem, dtype=np.double, requirements=["C", "A"])
     horizon_cos = np.zeros_like(elevations)
 
     topo_core.c_horizon_2d(
-        elevations,
-        np.double(adjusted_spacing),
-        is_forward,
-        horizon_cos
+        elevations, np.double(adjusted_spacing), is_forward, horizon_cos
     )
 
     if is_skewed:
         horizon_cos = skew(horizon_cos.transpose(), skew_angle, fwd=False)
+        # Subtract striping from the horizon data
+        horizon_cos = horizon_cos - median_filter(
+            horizon_cos - median_filter(horizon_cos, size=(3, 1)), size=(1, 3)
+        )
 
     if transpose_output:
         horizon_cos = horizon_cos.transpose()
