@@ -2,7 +2,6 @@
 requires = [
   "Cython",
   "numpy<1.23",
-  "scipy",
   "setuptools",
   "setuptools_scm",
   "wheel",
@@ -23,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
   "numpy<1.23",
-  "scipy",
+  "scipy<1.12",
 ]
 dynamic = ["version"]
 
