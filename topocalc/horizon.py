@@ -120,12 +120,19 @@ def horizon(azimuth: float, dem: npt.NDArray, spacing: float) -> npt.NDArray:
     horizon_cos = np.zeros_like(elevations)
 
     topo_core.c_horizon_2d(
-        elevations, np.double(adjusted_spacing), is_forward, horizon_cos
+        elevations,
+        np.double(adjusted_spacing),
+        is_forward,
+        horizon_cos
     )
 
     if is_skewed:
         horizon_cos = skew(horizon_cos.transpose(), skew_angle, fwd=False)
+
         # Subtract striping from the horizon data
+        # Skew is a near perfect transformation, however, the integer snapping caused
+        # by offset will create some striping. Instead of tracking this flipping that occurs 
+        # this solution here uses median_filter to search specifically for linear features.
         horizon_cos = horizon_cos - median_filter(
             horizon_cos - median_filter(horizon_cos, size=(3, 1)), size=(1, 3)
         )
