@@ -46,7 +46,6 @@ def skew(
         skewed array
 
     """
-
     if angle == 0:
         return arr
 
@@ -74,27 +73,13 @@ def skew(
     if fill_min:
         b += np.min(arr)
 
-    line_indices = np.arange(nlines)
-    o_indices = line_indices if negflag else nlines - line_indices - 1
-    offsets = o_indices * slope
+    for line in range(nlines):
+        o = line if negflag else nlines - line - 1
+        offset = int(o * slope + 0.5)
 
-    output_grid = np.arange(o_nsamps)
-    source_grid = np.arange(nsamps)
-
-    if fwd:
-        for i in range(nlines):
-            offset = offsets[i]
-            source = output_grid - offset
-            mask = (source >= 0) & (source <= nsamps - 1)
-            y_k = np.interp(source[mask], source_grid, arr[i, :])
-            b[i, mask] = y_k
-
-    else:
-        for i in range(nlines):
-            offset = offsets[i]
-            output = source_grid - offset
-            mask = (output >= 0) & (output <= o_nsamps - 1)
-            y_k = np.interp(output_grid, output[mask], arr[i, source_grid[mask]])
-            b[i, :] = y_k
+        if fwd:
+            b[line, offset : offset + nsamps] = arr[line, :]
+        else:
+            b[line, :] = arr[line, offset : offset + o_nsamps]
 
     return b
