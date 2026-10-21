@@ -26,11 +26,6 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[project.optional-dependencies]
-dev = [
-    "spatialnc>=0.2.12",
-]
-
 [project.urls]
 Homepage = "https://github.com/iSnobal/topocalc"
 
