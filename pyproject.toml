@@ -1,9 +1,9 @@
 [build-system]
 requires = [
-  "Cython",
-  "numpy<1.23",
-  "setuptools",
-  "setuptools_scm",
+  "Cython>=3.1",
+  "numpy>=2.0",
+  "setuptools>=64",
+  "setuptools_scm>=8",
   "wheel",
 ]
 build-backend = "setuptools.build_meta"
@@ -19,10 +19,11 @@ classifiers = [
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-  "numpy<1.23",
-  "scipy<1.12",
+  "numpy>=1.23",
+  "scipy",
 ]
 dynamic = ["version"]
 
